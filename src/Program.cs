@@ -38,7 +38,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>()
 // Add Authentication & JWT
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
@@ -53,6 +53,12 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
+})
+.AddCookie("AdminCookie", options =>
+{
+    options.LoginPath = "/admin/login";
+    options.AccessDeniedPath = "/admin/login";
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
 });
 
 builder.Services.AddQuartz(options =>
@@ -66,12 +72,34 @@ builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExternalService, ExternalService>();
+builder.Services.AddScoped<authModule.Utilities.JwtHelper>();
 
 // Add MVC with Views support (for Razor)
-builder.Services.AddControllersWithViews();
+// Customize the view location to /src/Views/
+builder.Services.AddControllersWithViews()
+    .AddRazorOptions(options =>
+    {
+        options.ViewLocationFormats.Clear();
+        options.ViewLocationFormats.Add("/src/Views/{1}/{0}.cshtml");
+        options.ViewLocationFormats.Add("/src/Views/Shared/{0}.cshtml");
+    });
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+// Seed Admin User
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        await authModule.DataContext.DataSeeder.SeedAdminUser(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("An error occurred while seeding the database: " + ex.Message);
+    }
+}
 
 Console.WriteLine("====================================");
 Console.WriteLine("Connect to Database PostgreSQL Successfully");
