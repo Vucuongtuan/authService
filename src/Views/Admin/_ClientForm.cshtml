@@ -1,0 +1,32 @@
+@model authModule.Services.ClientDto
+
+<div class="mb-4">
+    <label asp-for="Name" class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+    <input asp-for="Name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="My App" />
+    <span asp-validation-for="Name" class="text-red-500 text-xs italic"></span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Description" class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+    <textarea asp-for="Description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="App description..."></textarea>
+    <span asp-validation-for="Description" class="text-red-500 text-xs italic"></span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="Domain" class="block text-gray-700 text-sm font-bold mb-2">Domain (URL)</label>
+    <input asp-for="Domain" type="url" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://myapp.com" />
+    <span asp-validation-for="Domain" class="text-red-500 text-xs italic"></span>
+</div>
+
+<div class="mb-4">
+    <label asp-for="RedirectUris" class="block text-gray-700 text-sm font-bold mb-2">Redirect URIs (comma separated)</label>
+    <input asp-for="RedirectUris" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://myapp.com/callback, https://myapp.com/login" />
+    <span asp-validation-for="RedirectUris" class="text-red-500 text-xs italic"></span>
+    <p class="text-gray-500 text-xs mt-1">Separate multiple URIs with commas.</p>
+</div>
+
+<div class="mb-6">
+    <label asp-for="ThumbnailUri" class="block text-gray-700 text-sm font-bold mb-2">Thumbnail URI</label>
+    <input asp-for="ThumbnailUri" type="url" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://myapp.com/logo.png" />
+    <span asp-validation-for="ThumbnailUri" class="text-red-500 text-xs italic"></span>
+</div>

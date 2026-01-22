@@ -1,0 +1,28 @@
+@model authModule.Services.ClientDto
+
+@{
+    ViewData["Title"] = "Edit Client";
+    var clientId = ViewData["ClientId"];
+}
+
+<div class="w-full max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Edit Client</h1>
+        <a href="/admin" class="text-gray-600 hover:text-gray-900">&larr; Back to List</a>
+    </div>
+
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <form asp-action="Edit" asp-route-id="@clientId" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-red-500 mb-4"></div>
+            
+            <partial name="_ClientForm" model="Model" />
+
+            <div class="flex items-center justify-between mt-6">
+                <p class="text-gray-500 text-sm">Client ID: @clientId</p>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150" type="submit">
+                    Update Client
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
