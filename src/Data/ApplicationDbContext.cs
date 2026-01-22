@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, 
 
     public DbSet<Client> Clients { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<AuthorizationCode> AuthorizationCodes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

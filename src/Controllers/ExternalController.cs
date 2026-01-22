@@ -1,11 +1,9 @@
-
-
+using authModule.DTOs.Auth;
 using authModule.Services.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace authModule.Controllers;
 
-[Route("/[controller]")]
 public class ExternalController : Controller
 {
     private readonly ILogger<ExternalController> _logger;
@@ -17,13 +15,18 @@ public class ExternalController : Controller
         _logger = logger;
     }
 
-    [HttpGet("status")]
+    [HttpGet("external/status")]
     public IActionResult GetStatus()
     {
         return Ok("External Controller is working!");
     }
 
-    // Route: /login
+    /// <summary>
+    ///  render View engine login page
+    /// </summary>
+    /// <param name="client_id"></param>
+    /// <param name="callback"></param>
+    /// <returns></returns>
     [HttpGet("/login")]
     public IActionResult Login([FromQuery] string client_id, [FromQuery] string callback)
     {
@@ -38,10 +41,39 @@ public class ExternalController : Controller
         return View();
     }
 
-    //Route admin
-    [HttpGet("/admin/login")]
-    public IActionResult AdminLogin()
+
+    // api http
+    [HttpPost("/login")]
+    public async Task<IActionResult> Login([FromQuery] string client_id, [FromQuery] string callback, [FromForm] string email, [FromForm] string password)
     {
-        return View();
+        ViewData["ClientId"] = client_id;
+        ViewData["Callback"] = callback;
+
+        var result = await _externalService.HandleExternalLoginAsync(email, password, client_id, callback);
+
+        if (!result.Success)
+        {
+            ViewData["Error"] = result.Message;
+            return View();
+        }
+
+        return Redirect(result.Data!);
+    }
+
+
+
+    [HttpPost("/connect/token")]
+    public async Task<IActionResult> ExchangeToken([FromBody] ExchangeCodeDto request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        var result = await _externalService.ExchangeCodeForTokenAsync(request);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
     }
 }
