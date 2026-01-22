@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom tweaks if needed */
+        body { font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <nav class="bg-white shadow mb-8">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <div class="flex justify-between items-center py-4">
+                <a class="text-xl font-bold text-blue-600" href="/admin">AuthService Admin</a>
+                
+                <div class="flex items-center space-x-6">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a href="/admin" class="hover:text-blue-600 font-medium">Clients</a>
+                        <span class="text-gray-400">|</span>
+                        <span class="text-gray-600">Hi, @User.Identity.Name</span>
+                        <a href="/admin/logout" class="text-red-500 hover:text-red-700 font-medium">Logout</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container mx-auto px-4 max-w-6xl pb-10">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+</body>
+</html>
