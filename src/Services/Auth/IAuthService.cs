@@ -12,4 +12,6 @@ public interface IAuthService
     Task<ServiceResponse<object>> RefreshTokenAsync(RefreshTokenRequestDto request);
     Task<ServiceResponse<object>> SendOtpAsync(SendOtpRequestDto request);
     Task<ServiceResponse<object>> VerifyOtpLoginAsync(VerifyOtpLoginDto request);
+    Task<ServiceResponse<object>> ForgotPasswordAsync(string email);
+    Task<ServiceResponse<object>> ResetPasswordAsync(ResetPasswordDto request);
 }

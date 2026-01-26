@@ -75,6 +75,23 @@ namespace authModule.Controllers
             return Ok(result);
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] SendOtpRequestDto request)
+        {
+            // Reusing SendOtpRequestDto which contains Email
+            var result = await _authService.ForgotPasswordAsync(request.Email);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request)
+        {
+            var result = await _authService.ResetPasswordAsync(request);
+            if (!result.Success) return BadRequest(result);
+            return Ok(result);
+        }
+
 
     }
 }

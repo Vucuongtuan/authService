@@ -30,6 +30,8 @@
             ["privacy_policy"] = "Privacy Policy",
             ["terms_of_use"] = "Terms of Use",
             ["continue_btn"] = "CONTINUE",
+            ["forgot_password"] = "Forgot Password?",
+            ["create_account"] = "Don't have an account? Create one",
             ["send_otp_btn"] = "SEND OTP",
             ["verify_otp_btn"] = "LOG IN",
             ["otp_hint"] = "We will send an OTP to your email for verification.",
@@ -57,6 +59,8 @@
             ["privacy_policy"] = "Chính sách bảo mật",
             ["terms_of_use"] = "Điều khoản sử dụng",
             ["continue_btn"] = "TIẾP TỤC",
+            ["forgot_password"] = "Quên mật khẩu?",
+            ["create_account"] = "Chưa có tài khoản? Đăng ký ngay",
             ["send_otp_btn"] = "GỬI MÃ OTP",
             ["verify_otp_btn"] = "ĐĂNG NHẬP",
             ["otp_hint"] = "Chúng tôi sẽ gửi một mã OTP đến email của bạn để xác thực.",
@@ -129,16 +133,16 @@
 </head>
 
 
-<body class="bg-white text-[#111] h-screen w-screen flex flex-col max-w-screen-sm mx-auto container">
+<body class="bg-white text-[#111] h-[100dvh] w-screen flex flex-col max-w-screen-sm mx-auto container px-6 sm:px-0 overflow-y-auto sm:overflow-hidden">
     <!-- Header/Logo Area -->
-    <div class=" py-4 flex justify-between items-center">
+    <div class="py-4 flex justify-between items-center shrink-0">
         @if (!string.IsNullOrEmpty(logoClient))
         {
-            <img src="@logoClient" alt="@nameClient" class="h-12 -mx-8 w-auto mix-blend-multiply" />
+            <img src="@logoClient" alt="@nameClient" class="h-10 sm:h-12 -mx-4 sm:-mx-8 w-auto mix-blend-multiply" />
         }
         else
         {
-            <h2 class="text-2xl font-bold tracking-tight">@nameClient</h2>
+            <h2 class="text-xl sm:text-2xl font-bold tracking-tight">@nameClient</h2>
         }
 
         <!-- Language Switcher -->
@@ -151,10 +155,10 @@
         </div>
     </div>
 
-    <div class="flex-1 flex flex-col py-12">
+    <div class="flex-1 flex flex-col justify-center py-4 sm:py-12">
         <div class="w-full">
-            <div class="mb-8 ">
-                <h1 class="text-[28px] leading-8 font-bold text-center w-full">
+            <div class="mb-6 sm:mb-8">
+                <h1 class="text-2xl sm:text-[28px] leading-8 font-bold text-center w-full">
                     @GetT("heading")
                 </h1>
             </div>
@@ -189,6 +193,9 @@
                     <div>
                         <input class="input-minimal" id="password" name="password" type="password"
                             placeholder="@GetT("placeholder_password")" required>
+                        <div class="text-right mt-2">
+                            <a href="/forgot-password?client_id=@idClient&callback=@callbackClient&locale=@locale" class="text-xs text-gray-500 hover:text-black hover:underline transition-colors">@GetT("forgot_password")</a>
+                        </div>
                     </div>
 
                     <div class="text-xs text-gray-500 text-center leading-5 px-4">
@@ -205,6 +212,10 @@
                             type="submit">
                             @GetT("continue_btn")
                         </button>
+                    </div>
+
+                    <div class="text-center pt-2">
+                         <a href="/register?client_id=@idClient&callback=@callbackClient&locale=@locale" class="text-sm font-medium text-gray-600 hover:text-black transition-colors">@GetT("create_account")</a>
                     </div>
                 </form>
             </div>
@@ -397,7 +408,6 @@
                 if (response.ok && data.success) {
                     showMessage(messages.loginSuccess, 'success');
 
-                    // Redirect to the URL returned by the server (which contains the auth code)
                     setTimeout(() => {
                         window.location.href = data.data;
                     }, 1000);
@@ -413,7 +423,6 @@
 
         function showMessage(message, type) {
             const messageDiv = document.getElementById('otp-message');
-            // Minimal message style
             const colorClass = type === 'success' ? 'text-green-600' : 'text-red-600';
 
             messageDiv.innerHTML = `<span class="${colorClass}">${message}</span>`;

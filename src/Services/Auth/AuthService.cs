@@ -217,5 +217,74 @@ namespace authModule.src.Services.Auth
             });
         }
 
+        public async Task<ServiceResponse<object>> ForgotPasswordAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return ServiceResponse<object>.Fail("If your email is registered, you will receive an OTP code.");
+
+             var existingOtps = await _context.OtpCodes
+                .Where(x => x.Email == email && !x.IsUsed)
+                .ToListAsync();
+            if (existingOtps.Any())
+            {
+                foreach (var otp in existingOtps) otp.IsUsed = true;
+                _context.OtpCodes.UpdateRange(existingOtps);
+            }
+
+            var otpCode = _otpHelper.GenerateOtpCode();
+            var expiryTime = _otpHelper.GetOtpExpiryTime();
+
+            var newOtp = new OtpCode
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Code = otpCode,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = expiryTime,
+                IsUsed = false
+            };
+
+            await _context.OtpCodes.AddAsync(newOtp);
+            await _context.SaveChangesAsync();
+
+            // Send Email
+            var emailBody = $"Your Password Reset Code is: <b>{otpCode}</b>. It expires in 5 minutes.";
+            _mailHelper.SendMail(email, "Reset Password Request", emailBody, true);
+
+            return ServiceResponse<object>.Ok("OTP sent.");
+        }
+
+        public async Task<ServiceResponse<object>> ResetPasswordAsync(ResetPasswordDto request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null) return ServiceResponse<object>.Fail("Invalid request.");
+
+            var otpRecord = await _context.OtpCodes
+                .Where(x => x.Email == request.Email && x.Code == request.OtpCode && !x.IsUsed)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (otpRecord == null || otpRecord.IsExpired)
+            {
+                return ServiceResponse<object>.Fail("Invalid or expired OTP.");
+            }
+
+            // Mark OTP used
+            otpRecord.IsUsed = true;
+            _context.OtpCodes.Update(otpRecord);
+
+            // Reset Password
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                return ServiceResponse<object>.Fail("Failed to reset password. " + result.Errors.FirstOrDefault()?.Description);
+            }
+
+            await _context.SaveChangesAsync();
+            return ServiceResponse<object>.Ok("Password reset successfully.");
+        }
+
     }
 }

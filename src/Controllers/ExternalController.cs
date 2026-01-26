@@ -85,8 +85,26 @@ public class ExternalController : Controller
             return BadRequest(result);
         }
 
-       
+        // result.Data contains the redirect URL with the code
         return Ok(result);
+    }
+
+    [HttpGet("/register")]
+    public IActionResult Register([FromQuery] string client_id, [FromQuery] string callback, [FromQuery] string locale = "en")
+    {
+        ViewData["client_id"] = client_id;
+        ViewData["callback"] = callback;
+        ViewData["locale"] = locale;
+        return View();
+    }
+
+    [HttpGet("/forgot-password")]
+    public IActionResult ForgotPassword([FromQuery] string client_id, [FromQuery] string callback, [FromQuery] string locale = "en")
+    {
+        ViewData["client_id"] = client_id;
+        ViewData["callback"] = callback;
+        ViewData["locale"] = locale;
+        return View();
     }
 
 
