@@ -28,15 +28,23 @@ public class ExternalController : Controller
     /// <param name="callback"></param>
     /// <returns></returns>
     [HttpGet("/login")]
-    public IActionResult Login([FromQuery] string client_id, [FromQuery] string callback)
+    public async Task<IActionResult> Login([FromQuery] string client_id, [FromQuery] string callback, [FromQuery] string locale = "en")
     {
         if (string.IsNullOrEmpty(client_id) || string.IsNullOrEmpty(callback))
         {
             return BadRequest("Missing client_id or callback parameters.");
         }
+        var result = await _externalService.GetExternalClientByIdAsync(client_id);
+        if (!result.Success || string.IsNullOrEmpty(callback) || callback != result.Data!.RedirectUris)
+        {
+            return BadRequest("Invalid client_id or callback URL.");
+        }
 
-        ViewData["ClientId"] = client_id;
-        ViewData["Callback"] = callback;
+        ViewData["logo"] = result.Data.ThumbnailUri;
+        ViewData["name"] = result.Data.Name;
+        ViewData["client_id"] = client_id;
+        ViewData["callback"] = callback;
+        ViewData["locale"] = locale;
 
         return View();
     }
