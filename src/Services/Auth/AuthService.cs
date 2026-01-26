@@ -1,7 +1,9 @@
 using authModule.Common;
 using authModule.DataContext;
 using authModule.DTOs.Auth;
+using authModule.src.DTOs.Auth;
 using authModule.Models;
+using authModule.src.Helpers;
 using authModule.src.Services.Auth;
 using authModule.Utilities;
 using Microsoft.AspNetCore.Identity;
@@ -15,12 +17,18 @@ namespace authModule.src.Services.Auth
         private readonly UserManager<User> _userManager;
         private readonly ApplicationDbContext _context;
         private readonly JwtHelper _jwtHelper;
+        private readonly Mail _mailHelper;
+        private readonly OtpHelper _otpHelper;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(UserManager<User> userManager, ApplicationDbContext context, JwtHelper jwtHelper)
+        public AuthService(UserManager<User> userManager, ApplicationDbContext context, JwtHelper jwtHelper, Mail mailHelper, OtpHelper otpHelper, ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _context = context;
             _jwtHelper = jwtHelper;
+            _mailHelper = mailHelper;
+            _otpHelper = otpHelper;
+            _logger = logger;
         }
 
         public async Task<ServiceResponse<User>> RegisterAsync(RegisterDto request)
@@ -117,5 +125,97 @@ namespace authModule.src.Services.Auth
                 expires_in = 3600
             });
         }
+
+        public async Task<ServiceResponse<object>> SendOtpAsync(SendOtpRequestDto request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null) return ServiceResponse<object>.Fail("User not found. Please register first.");
+
+            // Invalidate existing unused OTP codes
+            var existingOtps = await _context.OtpCodes
+                .Where(x => x.Email == request.Email && !x.IsUsed)
+                .ToListAsync();
+            _logger.LogInformation("Found {Count} existing OTPs for {Email}", existingOtps, request.Email);
+            if (existingOtps.Any())
+            {
+                foreach (var otp in existingOtps)
+                {
+                    otp.IsUsed = true;
+                }
+                _context.OtpCodes.UpdateRange(existingOtps);
+            }
+
+            // Generate new OTP
+            var otpCode = _otpHelper.GenerateOtpCode();
+            var expiryTime = _otpHelper.GetOtpExpiryTime();
+            var expiryMinutes = _otpHelper.GetExpirationMinutes();
+
+            var newOtp = new OtpCode
+            {
+                Id = Guid.NewGuid(),
+                Email = request.Email,
+                Code = otpCode,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = expiryTime,
+                IsUsed = false
+            };
+
+            await _context.OtpCodes.AddAsync(newOtp);
+            await _context.SaveChangesAsync();
+
+            // Send email
+            var emailBody = EmailTemplates.GetOtpEmailBody(otpCode, expiryMinutes);
+            var (status, message) = _mailHelper.SendMail(request.Email, "Your Login Code", emailBody, true);
+
+            if (!status)
+            {
+                _logger.LogError("Failed to send OTP email to {Email}: {Message}", request.Email, message);
+                return ServiceResponse<object>.Fail("Failed to send email. Please try again later.");
+            }
+
+            _logger.LogInformation("OTP sent to {Email}", request.Email);
+            return ServiceResponse<object>.Ok(new { message = "OTP code sent to your email" });
+        }
+
+        public async Task<ServiceResponse<object>> VerifyOtpLoginAsync(VerifyOtpLoginDto request)
+        {
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null) return ServiceResponse<object>.Fail("Invalid credentials.");
+
+            var otpRecord = await _context.OtpCodes
+                .Where(x => x.Email == request.Email && x.Code == request.OtpCode && !x.IsUsed)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (otpRecord == null) return ServiceResponse<object>.Fail("Invalid or expired OTP code.");
+
+            if (otpRecord.IsExpired)
+            {
+                _logger.LogWarning("Expired OTP attempt for {Email}", request.Email);
+                return ServiceResponse<object>.Fail("OTP code has expired. Please request a new one.");
+            }
+
+            // Mark OTP as used
+            otpRecord.IsUsed = true;
+            _context.OtpCodes.Update(otpRecord);
+            await _context.SaveChangesAsync();
+
+            // Generate JWT tokens (same as LoginAsync)
+            var (token, jti) = _jwtHelper.GenerateToken(user.Id.ToString(), user.Email ?? "Unknown", user.Role.ToString());
+            var refreshToken = _jwtHelper.CreateRefreshToken(jti, user.Id);
+
+            await _context.RefreshTokens.AddAsync(refreshToken);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("OTP login successful for {Email}", request.Email);
+            return ServiceResponse<object>.Ok(new
+            {
+                access_token = token,
+                refresh_token = refreshToken.Token,
+                token_type = "Bearer",
+                expires_in = 3600
+            });
+        }
+
     }
 }

@@ -73,6 +73,8 @@ builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IExternalService, ExternalService>();
 builder.Services.AddScoped<authModule.Utilities.JwtHelper>();
+builder.Services.AddScoped<authModule.src.Helpers.Mail>();
+builder.Services.AddScoped<authModule.src.Helpers.OtpHelper>();
 
 // Add MVC with Views support (for Razor)
 // Customize the view location to /src/Views/

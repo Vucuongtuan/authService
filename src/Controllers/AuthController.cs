@@ -1,4 +1,5 @@
 using authModule.DTOs.Auth;
+using authModule.src.DTOs.Auth;
 using authModule.src.Services.Auth;
 using Microsoft.AspNetCore.Mvc;
 
@@ -54,5 +55,26 @@ namespace authModule.Controllers
 
             return Ok(result);
         }
+
+        /// OTP email login endpoints
+        [HttpPost("otp/send")]
+        public async Task<IActionResult> SendOtp([FromBody] SendOtpRequestDto request)
+        {
+            var result = await _authService.SendOtpAsync(request);
+            if (!result.Success) return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("otp/verify")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpLoginDto request)
+        {
+            var result = await _authService.VerifyOtpLoginAsync(request);
+            if (!result.Success) return Unauthorized(result);
+
+            return Ok(result);
+        }
+
+
     }
 }

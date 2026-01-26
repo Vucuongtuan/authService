@@ -138,4 +138,34 @@ public class ExternalService : IExternalService
             expires_in = 2592000 // 30 days in seconds
         });
     }
+
+
+    public async Task<ServiceResponse<ClientReadDto>> GetExternalClientByIdAsync(string clientId)
+    {
+        if (!Guid.TryParse(clientId, out var clientGuid))
+        {
+            return ServiceResponse<ClientReadDto>.Fail("Invalid client ID.");
+        }
+
+        var client = await _context.Clients
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == clientGuid);
+
+        if (client == null)
+        {
+            return ServiceResponse<ClientReadDto>.Fail("Client not found.");
+        }
+
+        return ServiceResponse<ClientReadDto>.Ok(new ClientReadDto
+        {
+            Id = client.Id,
+            Name = client.Name,
+            Description = client.Description,
+            Domain = client.Domain,
+            RedirectUris = client.RedirectUris,
+            ClientSecret = client.ClientSecret,
+            ThumbnailUri = client.ThumbnailUri,
+            CreatedAt = client.CreatedAt
+        });
+    }
 }
