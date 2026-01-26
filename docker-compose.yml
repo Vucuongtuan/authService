@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authpassword
+      POSTGRES_DB: authdb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Default=Host=db;Database=authdb;Username=authuser;Password=authpassword
+      - Jwt__Key=YourJwtKeyThatIsSecureAndLongEnough
+      - Jwt__Issuer=authService
+      - Jwt__Audience=authClients
+      # To use SQL Server instead of Postgres, comment the Postgres connection above
+      # and uncomment the example SQL Server connection below:
+      # - ConnectionStrings__Default=Server=sqlserver;Database=authdb;User Id=sa;Password=Your_password123
+    ports:
+      - "5000:80"
+    restart: on-failure
+
+  # Uncomment the following block to add a SQL Server service (commented out by default)
+  # sqlserver:
+  #   image: mcr.microsoft.com/mssql/server:2019-latest
+  #   restart: always
+  #   environment:
+  #     SA_PASSWORD: "Your_password123"
+  #     ACCEPT_EULA: "Y"
+  #   volumes:
+  #     - sqlserver_data:/var/opt/mssql
+  #   ports:
+  #     - "1433:1433"
+
+volumes:
+  db_data:
+  # sqlserver_data: # Uncomment if using SQL Server
