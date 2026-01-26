@@ -4,6 +4,10 @@
     var callbackClient = ViewData["callback"] as string ?? "";
     var nameClient = ViewData["name"] as string ?? "";
     var logoClient = ViewData["logo"] as string ?? "";
+    
+
+    // validate error field 
+    var error = ViewData["error"] as string ?? "";
 
     // Localization logic
     var locale = Context.Request.Query["locale"].ToString().ToLower();
@@ -154,7 +158,14 @@
                     @GetT("heading")
                 </h1>
             </div>
-
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="w-full mx-auto my-6">
+                    <div class="rounded bg-red-100 border-t-4 border-red-500 rounded-b text-white px-4 py-3 shadow-md my-2">
+                                <p class="text-lg">@error</p>
+                    </div>
+                </div>
+            }
             <!-- Tabs -->
             <div class="flex justify-center mb-8 space-x-8">
                 <button id="tab-password" class="pb-1 text-sm font-medium tab-active transition-colors"
@@ -365,7 +376,12 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/otp/verify`, {
+                // Get client_id and callback from Razor variables
+                const clientId = '@idClient';
+                const callbackUrl = '@callbackClient';
+                
+                // Call the new external OTP verify endpoint
+                const response = await fetch(`/external/otp/verify?client_id=${clientId}&callback=${encodeURIComponent(callbackUrl)}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -381,17 +397,11 @@
                 if (response.ok && data.success) {
                     showMessage(messages.loginSuccess, 'success');
 
-                    // Redirect to callback with authorization code
-                    const callbackUrl = '@callbackClient';
-                    const clientId = '@idClient';
-
-                    // In a real implementation, you would get the auth code from the response
-                    // and redirect to the callback URL
+                    // Redirect to the URL returned by the server (which contains the auth code)
                     setTimeout(() => {
-                        // window.location.href = callbackUrl + '?code=' + data.authCode;
-                        showMessage('Login Success!, 'success');
+                        window.location.href = data.data;
                     }, 1000);
-                    window.location.replace('@callbackClient');
+
                 } else {
                     showMessage(data.message || messages.invalidOtp, 'error');
                 }

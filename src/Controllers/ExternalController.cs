@@ -1,8 +1,10 @@
 using authModule.DTOs.Auth;
 using authModule.Services.Auth;
+using authModule.src.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace authModule.Controllers;
+
 
 public class ExternalController : Controller
 {
@@ -54,18 +56,37 @@ public class ExternalController : Controller
     [HttpPost("/login")]
     public async Task<IActionResult> Login([FromQuery] string client_id, [FromQuery] string callback, [FromForm] string email, [FromForm] string password)
     {
-        ViewData["ClientId"] = client_id;
-        ViewData["Callback"] = callback;
+        ViewData["client_id"] = client_id;
+        ViewData["callback"] = callback;
 
         var result = await _externalService.HandleExternalLoginAsync(email, password, client_id, callback);
 
         if (!result.Success)
         {
-            ViewData["Error"] = result.Message;
+            ViewData["error"] = result.Message;
             return View();
         }
 
         return Redirect(result.Data!);
+    }
+
+    [HttpPost("/external/otp/verify")]
+    public async Task<IActionResult> LoginOtp([FromQuery] string client_id, [FromQuery] string callback, [FromBody] VerifyOtpLoginDto request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var result = await _externalService.HandleExternalOtpLoginAsync(request.Email, request.OtpCode, client_id, callback);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+       
+        return Ok(result);
     }
 
 

@@ -35,6 +35,45 @@ public class ExternalService : IExternalService
             return ServiceResponse<string>.Fail("Invalid email or password.");
         }
 
+        return await GenerateAuthorizationCodeAsync(user, clientId, callback);
+    }
+
+    public async Task<ServiceResponse<string>> HandleExternalOtpLoginAsync(string email, string otpCode, string clientId, string callback)
+    {
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(otpCode))
+        {
+            return ServiceResponse<string>.Fail("Email and OTP code are required.");
+        }
+
+        // Validate user
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return ServiceResponse<string>.Fail("User not found.");
+        }
+
+        // Validate OTP
+        var otpRecord = await _context.OtpCodes
+            .Where(x => x.Email == email && x.Code == otpCode && !x.IsUsed)
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (otpRecord == null) return ServiceResponse<string>.Fail("Invalid or expired OTP code.");
+
+        if (otpRecord.IsExpired)
+        {
+            return ServiceResponse<string>.Fail("OTP code has expired. Please request a new one.");
+        }
+
+        // Mark OTP as used
+        otpRecord.IsUsed = true;
+        _context.OtpCodes.Update(otpRecord);
+        
+        return await GenerateAuthorizationCodeAsync(user, clientId, callback);
+    }
+
+    private async Task<ServiceResponse<string>> GenerateAuthorizationCodeAsync(User user, string clientId, string callback)
+    {
         // Validate clientId
         if (!Guid.TryParse(clientId, out var clientGuid))
         {
