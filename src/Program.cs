@@ -87,13 +87,13 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Seed Admin User
+// Seed Admin User Fake Data
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
-        await authModule.DataContext.DataSeeder.SeedAdminUser(services);
+        await authModule.DataContext.DataSeeder.SeedAll(services);
     }
     catch (Exception ex)
     {
