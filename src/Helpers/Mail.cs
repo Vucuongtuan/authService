@@ -29,9 +29,7 @@ namespace authModule.src.Helpers
                 var useSsl = _config.GetValue<bool>("Mail:UseSsl", true);
 
 
-                _logger.LogInformation("Preparing to send email to {To} via SMTP {Host}:{Port}", to, senderName, senderEmail);
                 var message = new MimeMessage();
-                _logger.LogInformation("SMTP Configuration - Host: {Host}, Port: {Port}, Username: {Username}, Use SSL: {UseSsl}", smtpHost, smtpPort, smtpUsername, useSsl);
                 message.From.Add(new MailboxAddress(senderName, senderEmail));
                 message.To.Add(new MailboxAddress("", to));
                 message.Subject = title;
@@ -47,7 +45,6 @@ namespace authModule.src.Helpers
                 }
                 message.Body = bodyBuilder.ToMessageBody();
 
-                _logger.LogInformation("=>>>>>>>> ", smtpHost, smtpPort, message);
 
                 using (var client = new MailKit.Net.Smtp.SmtpClient())
                 {
@@ -57,7 +54,6 @@ namespace authModule.src.Helpers
                     client.Disconnect(true);
                 }
 
-                _logger.LogInformation("Email sent successfully to {To}", to);
                 return (true, "Email sent successfully");
             }
             catch (Exception ex)
