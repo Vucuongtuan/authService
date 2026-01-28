@@ -14,6 +14,28 @@ using authModule.src.Services.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// -- cors policy
+
+// get allowed origins from appsettings.json file 
+// this is an array of strings this environment variable for production
+var allowedOrigins =
+    builder.Configuration
+           .GetSection("Cors:AllowedOrigins")
+           .Get<string[]>();
+
+builder.Services.AddCors(option =>
+{
+    option.AddPolicy("WhileListClient", policy =>
+    {
+        policy
+          .WithOrigins(allowedOrigins!)
+          .AllowAnyHeader()
+          .AllowAnyMethod();
+    });
+});
+
+
+
 // -- config database 
 var config = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -107,6 +129,9 @@ Console.WriteLine("====================================");
 Console.WriteLine("Connect to Database PostgreSQL Successfully");
 Console.WriteLine("====================================");
 // -- end config database
+
+
+
 
 
 app.UseHttpsRedirection();
