@@ -28,7 +28,6 @@ public class ExternalService : IExternalService
             return ServiceResponse<string>.Fail("Email and Password are required.");
         }
 
-        // Validate user credentials
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null || !await _userManager.CheckPasswordAsync(user, password))
         {
@@ -68,7 +67,7 @@ public class ExternalService : IExternalService
         // Mark OTP as used
         otpRecord.IsUsed = true;
         _context.OtpCodes.Update(otpRecord);
-        
+
         return await GenerateAuthorizationCodeAsync(user, clientId, callback);
     }
 
@@ -86,7 +85,6 @@ public class ExternalService : IExternalService
             return ServiceResponse<string>.Fail("Client not found.");
         }
 
-        // Generate temporary authorization code (token fake ,max 5 minutes)
         var authCode = new AuthorizationCode
         {
             Id = Guid.NewGuid(),
@@ -94,29 +92,23 @@ public class ExternalService : IExternalService
             UserId = user.Id,
             ClientId = clientGuid,
             RedirectUri = callback,
-            Expiry = DateTime.UtcNow.AddMinutes(5), // 5 phút
+            Expiry = DateTime.UtcNow.AddMinutes(5),
             IsUsed = false,
             CreatedAt = DateTime.UtcNow
         };
 
-        // Lưu authorization code vào database
         await _context.AuthorizationCodes.AddAsync(authCode);
         await _context.SaveChangesAsync();
 
-        // Redirect về client với code
-        var separator = callback.Contains("?") ? "&" : "?";
-        var redirectUrl = $"{callback}{separator}code={authCode.Code}";
+        var separator = client.RedirectUris.Contains("?") ? "&" : "?";
+        var redirectUrl = $"{client.RedirectUris}{separator}callback={callback}&code={authCode.Code}";
 
         return ServiceResponse<string>.Ok(redirectUrl);
     }
 
-    /// <summary>
-    /// Exchange authorization code để lấy access token thật
-    /// Web client sẽ gọi API này với code nhận được từ redirect
-    /// </summary>
+
     public async Task<ServiceResponse<object>> ExchangeCodeForTokenAsync(ExchangeCodeDto request)
     {
-        // Tìm authorization code trong database
         var authCode = await _context.AuthorizationCodes
             .Include(ac => ac.User)
             .Include(ac => ac.Client)
@@ -127,19 +119,16 @@ public class ExternalService : IExternalService
             return ServiceResponse<object>.Fail("Invalid authorization code.");
         }
 
-        // Kiểm tra code đã hết hạn chưa (5 phút)
         if (authCode.Expiry < DateTime.UtcNow)
         {
             return ServiceResponse<object>.Fail("Authorization code has expired.");
         }
 
-        // Kiểm tra code đã được sử dụng chưa (chỉ dùng 1 lần)
         if (authCode.IsUsed)
         {
             return ServiceResponse<object>.Fail("Authorization code has already been used.");
         }
 
-        // Validate client credentials
         if (authCode.ClientId != request.ClientId)
         {
             return ServiceResponse<object>.Fail("Client ID mismatch.");
@@ -150,21 +139,18 @@ public class ExternalService : IExternalService
             return ServiceResponse<object>.Fail("Invalid client credentials.");
         }
 
-        // Đánh dấu code đã được sử dụng
         authCode.IsUsed = true;
         _context.AuthorizationCodes.Update(authCode);
         await _context.SaveChangesAsync();
 
-        // Generate access token thật (sống lâu hơn)
         var user = authCode.User!;
         var (accessToken, jti) = _jwtHelper.GenerateToken(
             user.Id.ToString(),
             user.UserName ?? user.Email!,
             user.Role.ToString(),
-            isSecretToken: true // Token thật, sống 1 tháng
+            isSecretToken: true
         );
 
-        // Generate refresh token
         var refreshToken = _jwtHelper.CreateRefreshToken(jti, user.Id);
         await _context.RefreshTokens.AddAsync(refreshToken);
         await _context.SaveChangesAsync();
@@ -174,7 +160,7 @@ public class ExternalService : IExternalService
             access_token = accessToken,
             refresh_token = refreshToken.Token,
             token_type = "Bearer",
-            expires_in = 2592000 // 30 days in seconds
+            expires_in = 2592000
         });
     }
 
