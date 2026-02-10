@@ -95,6 +95,11 @@ public class ExternalService : IExternalService
             Expiry = DateTime.UtcNow.AddMinutes(5),
             IsUsed = false,
             CreatedAt = DateTime.UtcNow
+
+
+
+
+
         };
 
         await _context.AuthorizationCodes.AddAsync(authCode);

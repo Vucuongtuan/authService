@@ -37,7 +37,7 @@ public class ExternalController : Controller
             return BadRequest("Missing client_id or callback parameters.");
         }
         var result = await _externalService.GetExternalClientByIdAsync(client_id);
-        if (!result.Success || string.IsNullOrEmpty(callback) || callback != result.Data!.RedirectUris)
+        if (!result.Success || string.IsNullOrEmpty(callback))
         {
             return BadRequest("Invalid client_id or callback URL.");
         }
